@@ -1,5 +1,7 @@
 .idea/
 
+.venv/
+
 data/
 models/
 **/__pycache__/
