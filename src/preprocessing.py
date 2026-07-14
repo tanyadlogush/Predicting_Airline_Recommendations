@@ -10,52 +10,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
 
-def remove_template_title(title):
-    """
-    Removes template review titles of the form '<Airline> customer review'.
-    """
-    if pd.isna(title):
-        return ''
-
-    if re.search(r'customer review$', title, flags=re.IGNORECASE):
-        return ''
-
-    return title
-
-
-def prepare_data(df, cols_to_drop):
-    """
-    Prepares the dataset by removing unnecessary columns,
-    cleaning review titles, and creating combined review text.
-    """
-    df = df.copy()
-
-    # remove unused features
-    df = df.drop(columns=cols_to_drop)
-
-    # remove template titles
-    df['Review_Title'] = df['Review_Title'].apply(remove_template_title)
-
-    # create combined text feature
-    df['Review_Text'] = (
-            df['Review_Title'].fillna('') + ' ' + df['Review'].fillna('')
-    ).str.strip()
-
-    return df
-
-
-def prepare_target(df):
-    """
-    Converts the target variable from categorical labels
-    to binary numerical values.
-    """
-    df = df.copy()
-
-    df['Recommended_num'] = df['Recommended'].map({'yes': 1, 'no': 0})
-
-    return df
-
-
+# ============================ class TextCleaner ============================
 class TextCleaner(BaseEstimator, TransformerMixin):
     """
     Cleans text data by removing noise and normalizing text format.
@@ -127,12 +82,150 @@ class TextCleaner(BaseEstimator, TransformerMixin):
 
         return text
 
+# functions
+# ============================ remove_template_title ============================
+def remove_template_title(title):
+    """
+    Removes template review titles of the form '<Airline> customer review'.
+    """
+    if pd.isna(title):
+        return ''
 
-def create_preprocessor(num_cols, cat_cols, text_col):
+    if re.search(r'customer review$', title, flags=re.IGNORECASE):
+        return ''
+
+    return title
+
+# ============================ prepare_data ============================
+def prepare_data(df, cols_to_drop):
+    """
+    Prepares the dataset by removing unnecessary columns
+    and cleaning review titles.
+    """
+    df = df.copy()
+
+    # remove unused features
+    df = df.drop(columns=cols_to_drop)
+
+    # remove template titles
+    df['Review_Title'] = df['Review_Title'].apply(remove_template_title)
+
+    return df
+
+# ============================ prepare_target ============================
+def prepare_target(df):
+    """
+    Converts the target variable from categorical labels
+    to binary numerical values.
+    """
+    df = df.copy()
+
+    df['Recommended_num'] = df['Recommended'].map({'yes': 1, 'no': 0})
+
+    return df
+
+# ============================ prepare_features ============================
+def prepare_features(
+    df,
+    num_cols=None,
+    cat_cols=None,
+    text_source='review'
+):
+    """
+    Prepares input features and target variable for model training.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input dataframe after data and target preprocessing.
+    num_cols : list, optional
+        List of numerical feature names.
+    cat_cols : list, optional
+        List of categorical feature names.
+    text_source : {'review', 'title', 'review+title'}, default='review'
+        Specifies the text source used to create the Review_Text feature:
+        - 'review' : Use the review text only.
+        - 'title' : Use the review title only.
+        - 'review+title' : Combine the review title and review text.
+
+    Returns
+    -------
+    X : pandas.DataFrame
+        Input features.
+    y : pandas.Series
+        Target variable.
+    """
+
+    df = df.copy()
+
+    if num_cols is None:
+        num_cols = []
+    elif not isinstance(num_cols, list):
+        raise TypeError(
+            f'num_cols must be a list, got {type(num_cols).__name__}.'
+        )
+
+    if cat_cols is None:
+        cat_cols = []
+    elif not isinstance(cat_cols, list):
+        raise TypeError(
+            f'cat_cols must be a list, got {type(cat_cols).__name__}.'
+        )
+
+    if text_source == 'review':
+        df['Review_Text'] = df['Review']
+
+    elif text_source == 'title':
+        df['Review_Text'] = df['Review_Title']
+
+    elif text_source == 'review+title':
+        df['Review_Text'] = (
+                df['Review_Title'].fillna('') + ' ' +
+                df['Review'].fillna('')
+        ).str.strip()
+
+    else:
+        raise ValueError(
+            "text_features must be 'review', 'title' or 'review+title'."
+        )
+
+    input_cols = num_cols + cat_cols + ['Review_Text']
+
+    missing_cols = [
+    col for col in input_cols + ['Recommended_num']
+    if col not in df.columns
+    ]
+
+    if missing_cols:
+        raise ValueError(
+            f'Missing columns: {missing_cols}'
+        )
+
+    X = df[input_cols].copy()
+    y = df['Recommended_num']
+
+    return X, y
+
+# ============================ create_preprocessor ============================
+def create_preprocessor(num_cols=None, cat_cols=None):
     """
     Creates a preprocessing pipeline for numerical, categorical,
     and text features.
     """
+
+    if num_cols is None:
+        num_cols = []
+    elif not isinstance(num_cols, list):
+        raise TypeError(
+            f'num_cols must be a list, got {type(num_cols).__name__}.'
+        )
+
+    if cat_cols is None:
+        cat_cols = []
+    elif not isinstance(cat_cols, list):
+        raise TypeError(
+            f'cat_cols must be a list, got {type(cat_cols).__name__}.'
+        )
 
     numeric_transformer = Pipeline([
         ('imputer', SimpleImputer(strategy='constant', fill_value=-1))
@@ -160,7 +253,26 @@ def create_preprocessor(num_cols, cat_cols, text_col):
 
         ('num', numeric_transformer, num_cols),
         ('cat', categorical_transformer, cat_cols),
-        ('text', text_transformer, text_col)
+        ('text', text_transformer, 'Review_Text')
     ])
 
     return preprocessor
+
+# ============================ create_pipeline ============================
+def create_pipeline(model, num_cols=None, cat_cols=None):
+    """
+    Create a machine learning pipeline that combines
+    preprocessing and a classification model.
+    """
+
+    preprocessor = create_preprocessor(
+        num_cols,
+        cat_cols
+    )
+
+    pipeline = Pipeline([
+        ('preprocessor', preprocessor),
+        ('model', model)
+    ])
+
+    return pipeline
