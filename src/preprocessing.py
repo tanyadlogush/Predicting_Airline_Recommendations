@@ -14,6 +14,7 @@ from sklearn.preprocessing import OneHotEncoder
 class TextCleaner(BaseEstimator, TransformerMixin):
     """
     Cleans text data by removing noise and normalizing text format.
+    Compatible with scikit-learn Pipeline and ColumnTransformer.
     """
     def fit(self, X, y=None):
         return self
@@ -186,7 +187,7 @@ def prepare_features(
 
     else:
         raise ValueError(
-            "text_features must be 'review', 'title' or 'review+title'."
+            "text_source must be 'review', 'title' or 'review+title'."
         )
 
     input_cols = num_cols + cat_cols + ['Review_Text']
