@@ -69,10 +69,18 @@ if predict_clicked:
             for attempt in range(3):
                 try:
                     st.info("Waking up API...")
-                    requests.get(
-                        'https://airline-recommendation-api.onrender.com/',
-                        timeout=60
-                    )
+                    for _ in range(5):
+                        try:
+                            wake_response = requests.get(
+                                'https://airline-recommendation-api.onrender.com/',
+                                timeout=60
+                            )
+
+                            if wake_response.status_code == 200:
+                                break
+
+                        except requests.exceptions.RequestException:
+                            time.sleep(10)
 
                     response = requests.post(
                         API_URL,
