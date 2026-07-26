@@ -10,4 +10,3 @@ HEATMAP_CMAP = 'vlag'
 
 # Global random state for reproducibility across models and splits
 RANDOM_STATE = 42
-

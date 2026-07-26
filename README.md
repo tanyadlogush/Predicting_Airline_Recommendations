@@ -19,7 +19,7 @@ only on review text in order to evaluate how much predictive information can be 
 
 ## Project Pipeline
 
-Raw data → EDA → Preprocessing → Baseline → Traditional models → BERT → Final model (LinearSVC)
+Raw data → EDA → Preprocessing → Baseline → Traditional models → BERT → Final model (LinearSVC) → Deployment
 
 ## Dataset
 
@@ -105,6 +105,24 @@ The confusion matrix of the final LinearSVC model on the test set.
 * The project demonstrates that a classical **TF-IDF** + **LinearSVC** pipeline can provide strong performance for text
   classification without requiring complex neural networks.
 
+## Deployment
+
+A simple deployment of the final LinearSVC model is available in the `deployment/` directory.
+
+The deployment consists of:
+
+- **Streamlit** – user interface for entering airline reviews.
+- **FastAPI** – REST API serving the trained model.
+- **scikit-learn Pipeline** – includes text preprocessing, TF-IDF vectorization, and the trained LinearSVC classifier.
+
+Architecture:
+
+```text
+Browser → Streamlit → FastAPI → LinearSVC Pipeline
+```
+
+See `deployment/README.md` for deployment instructions.
+
 ## Installation
 
 1. Clone the repository:
@@ -131,6 +149,8 @@ Run the notebooks in the following order:
 3. `03_baseline.ipynb`
 4. `04_models.ipynb`
 5. `05_bert.ipynb`
+
+The deployment example is located in the `deployment/` directory.
 
 ## Requirements
 
