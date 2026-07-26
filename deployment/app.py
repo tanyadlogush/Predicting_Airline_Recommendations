@@ -94,8 +94,11 @@ if predict_clicked:
                     'Please check the FastAPI server.'
                 )
 
+
         except requests.exceptions.ConnectionError:
-            st.error('Could not connect to FastAPI server. Please make sure FastAPI is running on http://127.0.0.1:8000')
+            st.error('Could not connect to FastAPI server.')
+        except Exception as e:
+            st.error(f'Unexpected error: {e}')
         except requests.exceptions.Timeout:
             st.error('The request timed out. Please try again.')
         except requests.exceptions.Timeout:
