@@ -68,6 +68,11 @@ if predict_clicked:
 
             for attempt in range(3):
                 try:
+                    requests.get(
+                        'https://airline-recommendation-api.onrender.com/',
+                        timeout=60
+                    )
+
                     response = requests.post(
                         API_URL,
                         json={'review_text': cleaned_input},
