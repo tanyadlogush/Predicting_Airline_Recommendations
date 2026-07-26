@@ -9,7 +9,7 @@ project_root = Path(__file__).resolve().parent.parent
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
-API_URL = 'http://127.0.0.1:8000/predict'
+API_URL = 'https://airline-recommendation-api.onrender.com/predict'
 
 # page configuration
 st.set_page_config(
