@@ -1,6 +1,8 @@
 import sys
 import re
+import time
 from pathlib import Path
+
 import requests
 import streamlit as st
 
@@ -39,10 +41,13 @@ review_input = st.text_area(
 
 # columns for action buttons
 col_btn1, col_btn2 = st.columns([1, 5])
+
 with col_btn1:
     predict_clicked = st.button('Predict', type='primary')
+
 with col_btn2:
     st.button('Clear', on_click=clear_text)
+
 
 # prediction logic
 if predict_clicked:
@@ -50,20 +55,40 @@ if predict_clicked:
 
     if not cleaned_input:
         st.warning('Please enter a review.')
+
     else:
         if re.search(r'[\u0400-\u04FF]', cleaned_input):
-            st.toast('⚠️ Warning: Cyrillic characters detected. Please enter review in English.', icon='⚠️')
+            st.toast(
+                '⚠️ Warning: Cyrillic characters detected. Please enter review in English.',
+                icon='⚠️'
+            )
 
         try:
-            # call FastAPI endpoint
-            response = requests.post(
-                API_URL,
-                json={'review_text': cleaned_input},
-                timeout=10
-            )
+            response = None
+
+            for attempt in range(3):
+                try:
+                    response = requests.post(
+                        API_URL,
+                        json={'review_text': cleaned_input},
+                        timeout=60
+                    )
+
+                    if response.status_code == 200:
+                        break
+
+                    if attempt < 2:
+                        time.sleep(5)
+
+                except requests.exceptions.Timeout:
+                    if attempt < 2:
+                        time.sleep(5)
+                    else:
+                        raise
 
             if response.status_code == 200:
                 data = response.json()
+
                 prediction = data['prediction']
                 confidence = data['confidence']
                 top_features = data['top_features']
@@ -74,35 +99,39 @@ if predict_clicked:
 
                 with col_res:
                     st.subheader('Result')
+
                     if prediction == 1:
                         st.success('**Prediction:** Recommended')
                     else:
                         st.error('**Prediction:** Not Recommended')
 
-                    st.metric(label='Model Confidence', value=f'{confidence * 100:.1f}%')
+                    st.metric(
+                        label='Model Confidence',
+                        value=f'{confidence * 100:.1f}%'
+                    )
 
                 with col_words:
                     st.subheader('Most Influential Words')
+
                     if top_features:
                         for word, _ in top_features:
                             st.markdown(f'- **{word}**')
                     else:
-                        st.info('Text contains unknown or uninformative words for analysis.')
+                        st.info(
+                            'Text contains unknown or uninformative words for analysis.'
+                        )
+
             else:
                 st.error(
                     f'API returned status code {response.status_code}. '
                     'Please check the FastAPI server.'
                 )
 
+        except requests.exceptions.Timeout:
+            st.error('The request timed out. Please try again.')
 
         except requests.exceptions.ConnectionError:
             st.error('Could not connect to FastAPI server.')
+
         except Exception as e:
             st.error(f'Unexpected error: {e}')
-        except requests.exceptions.Timeout:
-            st.error('The request timed out. Please try again.')
-        except requests.exceptions.Timeout:
-            st.error('The request timed out. Please try again.')
-
-
-
