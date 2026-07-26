@@ -65,6 +65,15 @@ The application allows users to:
 - display the model confidence score;
 - highlight the most influential words contributing to the prediction.
 
+
+## Live demo
+
+Streamlit application:
+https://airline-recommendation-app.onrender.com
+
+FastAPI API:
+https://airline-recommendation-api.onrender.com
+
 ## Project architecture
 
 ```text

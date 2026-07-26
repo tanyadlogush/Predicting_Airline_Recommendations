@@ -107,21 +107,18 @@ The confusion matrix of the final LinearSVC model on the test set.
 
 ## Deployment
 
-A simple deployment of the final LinearSVC model is available in the `deployment/` directory.
+The final LinearSVC model is deployed as a web application.
 
-The deployment consists of:
+The deployment includes:
 
-- **Streamlit** – user interface for entering airline reviews.
-- **FastAPI** – REST API serving the trained model.
+- **Streamlit** – web interface for entering airline reviews and displaying predictions.
+- **FastAPI** – REST API serving the trained machine learning pipeline.
 - **scikit-learn Pipeline** – includes text preprocessing, TF-IDF vectorization, and the trained LinearSVC classifier.
 
-Architecture:
+Live demo:
 
-```text
-Browser → Streamlit → FastAPI → LinearSVC Pipeline
-```
-
-See `deployment/README.md` for deployment instructions.
+- Streamlit application: https://airline-recommendation-app.onrender.com
+- FastAPI API documentation: https://airline-recommendation-api.onrender.com/docs
 
 ## Installation
 
