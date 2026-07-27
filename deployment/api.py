@@ -1,14 +1,16 @@
 import sys
+import os
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-# add project root to sys.path
+
 project_root = Path(__file__).resolve().parent.parent
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
 from deployment.predict import predict_recommendation
+
 
 app = FastAPI(
     title='Airline Review Sentiment API',
@@ -36,9 +38,10 @@ def root():
 def predict(request: ReviewRequest):
     review_text = request.review_text.strip()
     if not review_text:
-        raise HTTPException(status_code=400,
-                            detail='Review text cannot be empty.'
-                            )
+        raise HTTPException(
+            status_code=400,
+            detail='Review text cannot be empty.'
+        )
 
     prediction, confidence, top_features = predict_recommendation(review_text)
 
@@ -52,9 +55,12 @@ def predict(request: ReviewRequest):
 if __name__ == '__main__':
     import uvicorn
 
+
+    port = int(os.environ.get("PORT", 8000))
+
     uvicorn.run(
         'deployment.api:app',
-        host='127.0.0.1',
-        port=8000,
-        reload=True
+        host='0.0.0.0',
+        port=port,
+        reload=False
     )

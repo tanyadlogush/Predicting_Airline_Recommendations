@@ -11,7 +11,8 @@ project_root = Path(__file__).resolve().parent.parent
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
-API_URL = 'https://airline-recommendation-api.onrender.com/predict'
+BASE_URL = 'https://airline-recommendation-api.onrender.com'
+API_URL = f'{BASE_URL}/predict'
 
 # page configuration
 st.set_page_config(
@@ -49,6 +50,18 @@ with col_btn2:
     st.button('Clear', on_click=clear_text)
 
 
+def wake_up_api() -> bool:
+    """API wake-up function without loopingя"""
+    for _ in range(3):
+        try:
+            wake_response = requests.get(BASE_URL, timeout=40)
+            if wake_response.status_code == 200:
+                return True
+        except requests.exceptions.RequestException:
+            time.sleep(4)
+    return False
+
+
 # prediction logic
 if predict_clicked:
     cleaned_input = review_input.strip()
@@ -64,82 +77,60 @@ if predict_clicked:
             )
 
         try:
-            response = None
+            # 1. Пробуджуємо бекенд з анімацією
+            with st.spinner('🚀 Connecting to API (waking up server if asleep)...'):
+                api_ready = wake_up_api()
 
-            for attempt in range(3):
-                try:
-                    st.info("Waking up API...")
-                    for _ in range(5):
-                        try:
-                            wake_response = requests.get(
-                                'https://airline-recommendation-api.onrender.com/',
-                                timeout=60
-                            )
+            if not api_ready:
+                st.error('The server is taking too long to wake up. Please click "Predict" again in a few seconds.')
+            else:
+                # 2. Робимо реальний запит для передбачення
+                response = requests.post(
+                    API_URL,
+                    json={'review_text': cleaned_input},
+                    timeout=30
+                )
 
-                            if wake_response.status_code == 200:
-                                break
+                if response.status_code == 200:
+                    data = response.json()
 
-                        except requests.exceptions.RequestException:
-                            time.sleep(10)
+                    prediction = data['prediction']
+                    confidence = data['confidence']
+                    top_features = data['top_features']
 
-                    response = requests.post(
-                        API_URL,
-                        json={'review_text': cleaned_input},
-                        timeout=60
-                    )
+                    st.markdown('---')
 
-                    if response.status_code == 200:
-                        break
+                    col_res, col_words = st.columns(2)
 
-                    if attempt < 2:
-                        time.sleep(5)
+                    with col_res:
+                        st.subheader('Result')
 
-                except requests.exceptions.Timeout:
-                    if attempt < 2:
-                        time.sleep(5)
-                    else:
-                        raise
+                        if prediction == 1:
+                            st.success('**Prediction:** Recommended')
+                        else:
+                            st.error('**Prediction:** Not Recommended')
 
-            if response.status_code == 200:
-                data = response.json()
-
-                prediction = data['prediction']
-                confidence = data['confidence']
-                top_features = data['top_features']
-
-                st.markdown('---')
-
-                col_res, col_words = st.columns(2)
-
-                with col_res:
-                    st.subheader('Result')
-
-                    if prediction == 1:
-                        st.success('**Prediction:** Recommended')
-                    else:
-                        st.error('**Prediction:** Not Recommended')
-
-                    st.metric(
-                        label='Model Confidence',
-                        value=f'{confidence * 100:.1f}%'
-                    )
-
-                with col_words:
-                    st.subheader('Most Influential Words')
-
-                    if top_features:
-                        for word, _ in top_features:
-                            st.markdown(f'- **{word}**')
-                    else:
-                        st.info(
-                            'Text contains unknown or uninformative words for analysis.'
+                        st.metric(
+                            label='Model Confidence',
+                            value=f'{confidence * 100:.1f}%'
                         )
 
-            else:
-                st.error(
-                    f'API returned status code {response.status_code}. '
-                    'Please check the FastAPI server.'
-                )
+                    with col_words:
+                        st.subheader('Most Influential Words')
+
+                        if top_features:
+                            for word, _ in top_features:
+                                st.markdown(f'- **{word}**')
+                        else:
+                            st.info(
+                                'Text contains unknown or uninformative words for analysis.'
+                            )
+
+                else:
+                    st.error(
+                        f'API returned status code {response.status_code}. '
+                        'Please check the FastAPI server.'
+                    )
 
         except requests.exceptions.Timeout:
             st.error('The request timed out. Please try again.')

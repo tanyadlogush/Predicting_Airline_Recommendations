@@ -1,5 +1,12 @@
 import sys
 from pathlib import Path
+
+
+project_root = Path(__file__).resolve().parent.parent
+if str(project_root) not in sys.path:
+    sys.path.append(str(project_root))
+
+
 import numpy as np
 import joblib
 import pandas as pd
@@ -7,12 +14,7 @@ from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
 from src.preprocessing import TextCleaner
 
-# add project root to sys.path
-project_root = Path(__file__).resolve().parent.parent
-if str(project_root) not in sys.path:
-    sys.path.append(str(project_root))
 
-# load model
 MODEL_PATH = Path(__file__).parent / 'airline_pipeline.pkl'
 model = joblib.load(MODEL_PATH)
 
@@ -73,7 +75,6 @@ def get_top_features(review_text: str, prediction: int, top_n: int = 3) -> list[
 
     # prefer bigrams
     for feature, score in candidates:
-
         words = feature.split()
 
         if len(words) < 2:
@@ -96,7 +97,6 @@ def get_top_features(review_text: str, prediction: int, top_n: int = 3) -> list[
 
     # add unigrams
     for feature, score in candidates:
-
         words = feature.split()
 
         if len(words) != 1:
