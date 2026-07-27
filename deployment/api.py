@@ -4,22 +4,20 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-# 1. Додаємо корінь проєкту до sys.path
+# add project root directory to sys.path
 project_root = Path(__file__).resolve().parent.parent
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
 from deployment.predict import predict_recommendation
 
-# 2. Створюємо екземпляр FastAPI
 app = FastAPI(
     title='Airline Review Sentiment API',
     description='API for predicting airline recommendation based on review text',
     version='1.0.0'
 )
 
-
-# --- Системні / Health Check ендпоінти (НА ПОЧАТКУ) ---
+# System / Health Check Endpoints
 
 @app.get('/')
 def root():
@@ -27,11 +25,12 @@ def root():
 
 
 @app.get('/health')
+@app.head('/health')
 def health_check():
     return {'status': 'healthy'}
 
 
-# --- Схеми даних Pydantic ---
+# Pydantic Data Models
 
 class ReviewRequest(BaseModel):
     review_text: str
@@ -43,7 +42,7 @@ class PredictionResponse(BaseModel):
     top_features: list[tuple[str, float]]
 
 
-# --- Основний бізнес-ендпоінт ---
+# Main Prediction Endpoint
 
 @app.post('/predict', response_model=PredictionResponse)
 def predict(request: ReviewRequest):
@@ -63,13 +62,12 @@ def predict(request: ReviewRequest):
     )
 
 
-# --- Точка входу для локального запуску ---
+# Local Execution Entry Point
 
 if __name__ == '__main__':
     import uvicorn
 
     port = int(os.environ.get("PORT", 8000))
-
     uvicorn.run(
         'deployment.api:app',
         host='0.0.0.0',
