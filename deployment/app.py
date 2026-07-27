@@ -51,14 +51,21 @@ with col_btn2:
 
 
 def wake_up_api() -> bool:
-    """API wake-up function without loopingя"""
-    for _ in range(3):
-        try:
-            wake_response = requests.get(BASE_URL, timeout=40)
-            if wake_response.status_code == 200:
-                return True
-        except requests.exceptions.RequestException:
-            time.sleep(4)
+    """Агресивне пробудження Render: робить до 6 спроб з павзами"""
+    with st.spinner("🚀 Waking up Render server... This can take 30-50 seconds on Free Tier."):
+
+        for attempt in range(6):
+            try:
+
+                wake_response = requests.get(f"{BASE_URL}/health", timeout=10)
+                if wake_response.status_code == 200:
+                    return True
+            except requests.exceptions.RequestException:
+
+                pass
+
+            time.sleep(7)
+
     return False
 
 
